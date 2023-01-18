@@ -12,6 +12,12 @@ const userSchema = mongoose.Schema({
  * On utilise ce plugin pour gérer l'unicité
  */
 userSchema.plugin(uniqueValidator);
+
+
+/**
+ * On utilise ce plugin pour gérer les codes d'erreurs sur les catch
+ * @param {Number}
+ */
 userSchema.plugin(MongooseErrors);
 
 module.exports = mongoose.model('User', userSchema);

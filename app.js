@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const sauceRoutes = require('./routes/sauce');
 const userRoutes = require('./routes/user');
 const path = require('path');
+//module sans dépendance qui charge les variables d'environnement en dehors du programme 
 const dotenv = require("dotenv");
 dotenv.config();
 
@@ -38,6 +39,10 @@ app.use('/images', express.static(path.join(__dirname, 'images')));
 */
 mongoose.set('strictQuery', true); 
 
+
+/**
+ * se connecter à MongoDB
+ */
 mongoose.connect(
     `mongodb+srv://${process.env.MONGO_DB_USER}:${process.env.MONGO_DB_PASSWORD}@cluster0.dg9ne4h.mongodb.net/piiquante?retryWrites=true&w=majority`,
   { useNewUrlParser: true,

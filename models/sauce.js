@@ -15,5 +15,10 @@ const sauceSchema = mongoose.Schema({
   usersDisliked : {type:[String]},
 });
 
+
+/**
+ * On utilise ce plugin pour indiquer les erreurs sur les catch
+ * @param {Number}
+ */
 sauceSchema.plugin(MongooseErrors);
 module.exports = mongoose.model('sauce', sauceSchema);

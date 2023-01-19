@@ -90,58 +90,69 @@ exports.deleteSauce = (req, res) => {
 };
 
 exports.likeSauce = (req, res) => {
-  console.log(req.body);
-  let like = req.body.like;
+  
+  let valueLike = req.body.like;
   let userId = req.auth.userId
+  let sauceId = req.params.id
 
   /** on recherche l'id de  la sauce */
-  Sauce.findOne({ _id: req.params.id})
+  Sauce.findOne({ _id: sauceId })
     .then (sauce  => {
+        const hasLiked = sauce.usersLiked.includes(userId)
+        const hasDisliked = sauce.usersDisliked.includes(userId)
+        const hasLikeOrDisliked = hasLiked || hasDisliked
 
-      /** on vérifie si l'utilisateur a déjà liké ou disliké */
-      if (!sauce.usersLiked.includes(req.auth.userId) && 
-        !sauce.usersDisiked.includes(req.auth.userId)){
+        let update = null
+        let msg = null
 
-          /**l'utilisateur like, on incrémente 1 like id utilisateur dans la bdd */
-          if (like === 1) { 
-            Sauce.updateOne(
-              { _id: req.params.id},
-              { $inc: {likes : +1}, $push: {usersLiked : userId}}
-            )
-            .then(() => res.status(200).json({message : 'like ajouté'}))
-            .catch(error => res.status(error.statusCode).json({ error }));  
-           
-          /**l'utilisateur dislike, on incrémente un dislike et id utilisateur dans la bdd*/
-          } else if (like === -1) {   
-            Sauce.updateOne(
-              { _id: req.params.id},
-              { $inc: {dislikes : +1}, $push: {usersDisliked : userId}}
-            )
-            .then(() => res.status(200).json({message : 'dislike ajouté'}))
-            .catch(error => res.status(error.statusCode).json({ error }));
-          } 
+        /**L'utilisateur like une première fois */
+        if (valueLike === 1 && !hasLikeOrDisliked) {
+          update = { $inc: { likes : +1 }, $push: { usersLiked : userId}}
+          msg = 'like ajouté'
+        
 
-      /**utilisateur a déjà liké ou disliké*/
-      } else { 
-        if (like === 0){
-          if (sauce.usersLiked.includes(req.auth.userId)) {
-            Sauce.updateOne(
-              { _id: req.params.id},
-              { $inc: {likes : -1},  $pull: {usersLiked : userId}})
-              .then(() => res.status(200).json({message : 'like retiré'}))
-              .catch(error => res.status(error.statusCode).json({ error }));
-          } else if (sauce.usersDisliked.includes(req.auth.userId)){
-            Sauce.updateOne(
-              { _id: req.params.id},
-              { $inc: {dislikes : -1},  $pull: {usersDisliked : userId}})
-              .then(() => res.status(200).json({message : 'dislike retiré'}))
-              .catch(error => res.status(error.statusCode).json({ error }));
-          } 
-        } 
-      }
+        /** L'utilisateur dislike une première fois */
+        } else if (valueLike === -1 && !hasLikeOrDisliked){
+          update = { $inc: { dislikes : +1}, $push: { usersDisliked : userId}}
+          msg = 'dislike ajouté'
+
+        /** L'utilisateur supprime son like ou son dislike */  
+        } else if (valueLike === 0 && hasLikeOrDisliked){
+          
+          /**L'utilisateur supprime son like */
+          if (hasLiked){
+            update = { $inc : { likes : -1}, $pull: { usersLiked : userId}}
+            msg = 'like supprimé'
+
+          /**L'utilisateur supprime son dislike */
+          } else if (hasDisliked){
+            update = { $inc : { dislikes : -1}, $pull: { usersDisliked : userId}}
+            msg = 'dislike supprimé'
+          }
+        }
+
+        /**Succès : Update de la base de donnée */
+        if (update) {
+          Sauce.updateOne(
+            { _id: sauceId},
+            update
+          )
+          .then(() => res.status(200).json({ message : msg}))
+          .catch(error => res.status(error.statusCode).json({ error }))
+        
+        /**Echec : L'utilisateur a déjà voté */
+        } else if (hasLikeOrDisliked) {
+          res.status(400).json({ msg : 'Vous avez déjà noté cette sauce'})
+        
+        /**Echec : Autres cas (mauvaise valueLike ou suppression d'un like ou dislike inexistant) */
+        } else {
+          res.status(400).json({ msg : 'Une erreur est survenue'})
+        }
     })
-    .catch (error  => {
+
+    /**Sauce non trouvée */
+    .catch (error => {
       res.status(error.statusCode).json({ error })
     })
-  } 
+  }
 
